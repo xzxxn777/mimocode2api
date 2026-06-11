@@ -1,38 +1,47 @@
 package config
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"os"
 	"strconv"
 	"strings"
 )
 
 type Config struct {
-	Port           int
-	BindHost       string
-	APIKey         string
-	UpstreamBase   string
-	BootstrapPath  string
-	ChatPath       string
-	ModelsPath     string
-	Fingerprint    string
-	Debug          bool
+	Port          int
+	BindHost      string
+	APIKey        string
+	UpstreamBase  string
+	BootstrapPath string
+	ChatPath      string
+	Fingerprint   string
+	Debug         bool
 }
 
 func Load() *Config {
-	base := getEnv("MIMO_FREE_BASE_URL", "https://api.xiaomimimo.com")
-	base = strings.TrimRight(base, "/")
+	base := strings.TrimRight(getEnv("MIMO_FREE_BASE_URL", "https://api.xiaomimimo.com"), "/")
+	apiKey := os.Getenv("API_KEY")
+	if apiKey == "" {
+		apiKey = generateAPIKey()
+	}
 
 	return &Config{
 		Port:          getEnvInt("MIMO2API_PORT", 10000),
 		BindHost:      getEnv("BIND_HOST", "0.0.0.0"),
-		APIKey:        os.Getenv("API_KEY"),
+		APIKey:        apiKey,
 		UpstreamBase:  base,
 		BootstrapPath: base + "/api/free-ai/bootstrap",
 		ChatPath:      base + "/api/free-ai/openai/chat",
-		ModelsPath:    base + "/api/free-ai/openai/models",
 		Fingerprint:   os.Getenv("MIMO_FINGERPRINT"),
 		Debug:         getEnvBool("MIMO2API_DEBUG", false),
 	}
+}
+
+func generateAPIKey() string {
+	b := make([]byte, 32)
+	rand.Read(b)
+	return "sk-" + hex.EncodeToString(b)
 }
 
 func getEnv(key, fallback string) string {

@@ -2,9 +2,6 @@
 mimo2api
 *.exe
 
-# Go
-go.sum
-
 # IDE
 .idea/
 .vscode/

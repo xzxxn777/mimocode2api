@@ -8,10 +8,10 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/akino/reverse-mimocode/internal/config"
-	"github.com/akino/reverse-mimocode/internal/handler"
-	"github.com/akino/reverse-mimocode/internal/middleware"
-	"github.com/akino/reverse-mimocode/internal/proxy"
+	"github.com/Sliverkiss/mimocode2api/internal/config"
+	"github.com/Sliverkiss/mimocode2api/internal/handler"
+	"github.com/Sliverkiss/mimocode2api/internal/middleware"
+	"github.com/Sliverkiss/mimocode2api/internal/proxy"
 )
 
 func main() {
@@ -24,7 +24,7 @@ func main() {
 	if fingerprint == "" {
 		fingerprint = proxy.GenerateFingerprint()
 	}
-	log.Printf("Fingerprint: %s", fingerprint[:16]+"...")
+	log.Printf("Fingerprint: %s...", fingerprint[:16])
 
 	jwt, err := proxy.GetJWT(cfg.BootstrapPath, fingerprint)
 	if err != nil {
@@ -32,6 +32,7 @@ func main() {
 	}
 	_ = jwt
 	log.Printf("JWT obtained, upstream=%s", cfg.UpstreamBase)
+	log.Printf("API Key: %s", cfg.APIKey)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/health", handler.Health())
@@ -44,8 +45,7 @@ func main() {
 	}))
 	apiMux.HandleFunc("/v1/models", handler.Models())
 
-	authHandler := middleware.Auth(cfg.APIKey)(apiMux)
-	mux.Handle("/v1/", authHandler)
+	mux.Handle("/v1/", middleware.Auth(cfg.APIKey)(apiMux))
 
 	addr := fmt.Sprintf("%s:%d", cfg.BindHost, cfg.Port)
 	log.Printf("Listening on %s", addr)

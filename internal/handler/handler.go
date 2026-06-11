@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/akino/reverse-mimocode/internal/model"
-	"github.com/akino/reverse-mimocode/internal/proxy"
+	"github.com/Sliverkiss/mimocode2api/internal/model"
+	"github.com/Sliverkiss/mimocode2api/internal/proxy"
 )
 
 type ProxyConfig struct {
