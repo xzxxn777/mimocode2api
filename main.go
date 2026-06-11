@@ -1,0 +1,67 @@
+package main
+
+import (
+	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+
+	"github.com/akino/reverse-mimocode/internal/config"
+	"github.com/akino/reverse-mimocode/internal/handler"
+	"github.com/akino/reverse-mimocode/internal/middleware"
+	"github.com/akino/reverse-mimocode/internal/proxy"
+)
+
+func main() {
+	log.SetFlags(log.LstdFlags | log.Lmsgprefix)
+	log.SetPrefix("[mimo2api] ")
+
+	cfg := config.Load()
+
+	fingerprint := cfg.Fingerprint
+	if fingerprint == "" {
+		fingerprint = proxy.GenerateFingerprint()
+	}
+	log.Printf("Fingerprint: %s", fingerprint[:16]+"...")
+
+	jwt, err := proxy.GetJWT(cfg.BootstrapPath, fingerprint)
+	if err != nil {
+		log.Fatalf("Bootstrap failed: %v", err)
+	}
+	_ = jwt
+	log.Printf("JWT obtained, upstream=%s", cfg.UpstreamBase)
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/health", handler.Health())
+
+	apiMux := http.NewServeMux()
+	apiMux.HandleFunc("/v1/chat/completions", handler.ChatCompletions(handler.ProxyConfig{
+		ChatURL:      cfg.ChatPath,
+		BootstrapURL: cfg.BootstrapPath,
+		Fingerprint:  fingerprint,
+	}))
+	apiMux.HandleFunc("/v1/models", handler.Models())
+
+	authHandler := middleware.Auth(cfg.APIKey)(apiMux)
+	mux.Handle("/v1/", authHandler)
+
+	addr := fmt.Sprintf("%s:%d", cfg.BindHost, cfg.Port)
+	log.Printf("Listening on %s", addr)
+
+	server := &http.Server{Addr: addr, Handler: mux}
+
+	go func() {
+		sigCh := make(chan os.Signal, 1)
+		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+		<-sigCh
+		log.Println("Shutting down...")
+		server.Close()
+	}()
+
+	if err := server.ListenAndServe(); err != http.ErrServerClosed {
+		log.Fatalf("Server error: %v", err)
+	}
+	log.Println("Server stopped")
+}

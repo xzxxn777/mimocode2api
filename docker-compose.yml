@@ -1,42 +1,18 @@
 services:
-  mimocode2api:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: mimocode2api:local
-    container_name: mimocode2api
-    ports:
-      - "${MIMOCODE_PROXY_PORT:-10000}:${MIMOCODE_PROXY_PORT:-10000}"
-    environment:
-      - PUID=${PUID:-1000}
-      - PGID=${PGID:-1000}
-      - MIMOCODE_SERVER_PASSWORD=${MIMOCODE_SERVER_PASSWORD:-}
-      - API_KEY=${API_KEY:-}
-      - BIND_HOST=0.0.0.0
-      - MIMOCODE_DISABLE_TOOLS=${MIMOCODE_DISABLE_TOOLS:-true}
-      - MIMOCODE_EXTERNAL_TOOLS_MODE=${MIMOCODE_EXTERNAL_TOOLS_MODE:-proxy-bridge}
-      - MIMOCODE_EXTERNAL_TOOLS_CONFLICT_POLICY=${MIMOCODE_EXTERNAL_TOOLS_CONFLICT_POLICY:-namespace}
-      - MIMOCODE_USE_ISOLATED_HOME=${MIMOCODE_USE_ISOLATED_HOME:-false}
-      - MIMOCODE_PROXY_DEBUG=${MIMOCODE_PROXY_DEBUG:-false}
-      - MIMOCODE_PROXY_PROMPT_MODE=${MIMOCODE_PROXY_PROMPT_MODE:-standard}
-      - MIMOCODE_PROXY_OMIT_SYSTEM_PROMPT=${MIMOCODE_PROXY_OMIT_SYSTEM_PROMPT:-false}
-      - MIMOCODE_PROXY_AUTO_CLEANUP_CONVERSATIONS=${MIMOCODE_PROXY_AUTO_CLEANUP_CONVERSATIONS:-true}
-      - MIMOCODE_PROXY_CLEANUP_INTERVAL_MS=${MIMOCODE_PROXY_CLEANUP_INTERVAL_MS:-43200000}
-      - MIMOCODE_PROXY_CLEANUP_MAX_AGE_MS=${MIMOCODE_PROXY_CLEANUP_MAX_AGE_MS:-86400000}
-      - MIMOCODE_PROXY_REQUEST_TIMEOUT_MS=${MIMOCODE_PROXY_REQUEST_TIMEOUT_MS:-180000}
-      - MIMOCODE_PROXY_PORT=${MIMOCODE_PROXY_PORT:-10000}
-      - MIMOCODE_SERVER_PORT=${MIMOCODE_SERVER_PORT:-10001}
-    volumes:
-      - mimocode-data:/home/node/.local/share/mimocode
-      - mimocode-config:/home/node/.config/mimocode
+  mimo2api:
+    build: .
+    container_name: mimo2api
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:${MIMOCODE_PROXY_PORT:-10000}/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
+    ports:
+      - "${MIMO2API_PORT:-10000}:10000"
+    environment:
+      - API_KEY=${API_KEY:-}
+      - MIMO_FREE_BASE_URL=${MIMO_FREE_BASE_URL:-https://api.xiaomimimo.com}
+      - MIMO_FINGERPRINT=${MIMO_FINGERPRINT:-}
+      - MIMO2API_DEBUG=${MIMO2API_DEBUG:-false}
+    networks:
+      - mimo2api_net
 
-volumes:
-  mimocode-data:
-  mimocode-config:
+networks:
+  mimo2api_net:
+    driver: bridge
